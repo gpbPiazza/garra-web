@@ -1,0 +1,26 @@
+@use "@angular/material" as mat;
+
+html {
+  @include mat.theme(
+    (
+      color: mat.$azure-palette,
+    )
+  );
+}
+
+.darkMode {
+  @include mat.theme(
+    (
+      color: mat.$azure-palette,
+      theme: dark,
+    ),
+  );
+}
+
+html, body { 
+  height: 100%; 
+}
+body { 
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif; 
+}
