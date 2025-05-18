@@ -1,6 +1,6 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -119,9 +119,9 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     }
   `]
 })
-export class MinutaCheckComponent implements OnInit {
+export class MinutaCheckComponent implements OnInit, AfterViewInit {
   @Input() content: SafeHtml | null = null;
-  @Input() rawContent: string = '';
+  @Input() rawContent = '';
   @Input() tokensNotFound: string[] = [];
   
   @Output() newMinuta = new EventEmitter<void>();
@@ -129,7 +129,7 @@ export class MinutaCheckComponent implements OnInit {
   
   @ViewChild('minutaEditor') minutaEditor!: ElementRef<HTMLDivElement>;
   
-  editedContent: string = '';
+  editedContent = '';
   
   constructor(
     private clipboard: Clipboard,

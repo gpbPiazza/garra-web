@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -216,7 +216,7 @@ function fileSizeValidator(maxSizeInMB: number) {
     }
   `]
 })
-export class MinutaInputFormComponent {
+export class MinutaInputFormComponent implements OnChanges {
   @Output() generateMinuta = new EventEmitter<MinutaFormData>();
   @Input() resetTrigger = 0;
   

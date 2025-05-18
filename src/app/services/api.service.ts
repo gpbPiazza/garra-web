@@ -29,8 +29,8 @@ export class ApiService {
 
   generateMinuta(
     file: File, 
-    isTransmitenteOverqualified: boolean = false, 
-    isAdquirenteOverqualified: boolean = false
+    isTransmitenteOverqualified = false, 
+    isAdquirenteOverqualified = false
   ): Observable<Response<GenerateMinutaResp>> {
     const formData = new FormData();
     formData.append('ato_consultar_pdf', file);
