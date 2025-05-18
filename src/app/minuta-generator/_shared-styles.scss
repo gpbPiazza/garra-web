@@ -1,0 +1,42 @@
+@use '@angular/material' as mat;
+
+@mixin card {
+  mat-card-header {
+    justify-content: center;
+  }
+  
+  mat-card-title {
+    text-align: center;
+    font-weight: 600;
+    font-size: 42px;
+    line-height: 52px;
+  }
+
+  mat-card-subtitle {
+    max-width: 800px;
+    margin: 8px auto 0;
+    line-height: 32px;
+    font-size: 22px;
+    font-weight: 400;
+    text-align: center;
+  }
+
+  mat-card {
+    width: 800px;
+    max-width: 800px;
+  }
+
+  mat-card-title-group{ 
+    justify-content: center;
+  }
+}
+
+@mixin themed-icons {
+  mat-icon {
+    @include mat.icon-overrides(
+      (
+        color: var(--mat-sys-tertiary),
+      )
+    );
+  }
+}
