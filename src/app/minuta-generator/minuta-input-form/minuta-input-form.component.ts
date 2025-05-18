@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -11,6 +11,33 @@ export interface MinutaFormData {
   file: File;
   isTransmitenteSupraqualificada: boolean;
   isAdquirenteSupraqualificada: boolean;
+}
+
+function fileTypeValidator(control: AbstractControl): ValidationErrors | null {
+  const file = control.value as File;
+  if (!file) return null;
+  
+  if (file.type !== 'application/pdf') {
+    return { invalidFileType: true };
+  }
+  
+  return null;
+}
+
+function fileSizeValidator(maxSizeInMB: number) {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const file = control.value as File;
+    if (!file) return null;
+    
+    // Convert MB to bytes (1MB = 1,048,576 bytes)
+    const maxSizeInBytes = maxSizeInMB * 1048576;
+    
+    if (file.size > maxSizeInBytes) {
+      return { fileTooLarge: { actualSize: file.size, maxSize: maxSizeInBytes } };
+    }
+    
+    return null;
+  };
 }
 
 @Component({
@@ -53,7 +80,7 @@ export interface MinutaFormData {
             </button>
             
             <div *ngIf="getFormFile()" class="selected-file-container">
-              <div class="selected-file-info">
+              <div class="selected-file-info" [class.error]="minutaForm.invalid">
                 <mat-icon>description</mat-icon>
                 <span class="file-name">{{ getFormFile()?.name }}</span>
                 <button 
@@ -62,6 +89,15 @@ export interface MinutaFormData {
                   matTooltip="Remover arquivo">
                   <mat-icon>close</mat-icon>
                 </button>
+              </div>
+
+              <div *ngIf="minutaForm.invalid" class="validation-error">
+                <div *ngIf="hasFileTypeError()">
+                  O arquivo deve ser um PDF.
+                </div>
+                <div *ngIf="hasFileSizeError()">
+                  O arquivo não pode exceder 300MB.
+                </div>
               </div>
               
               <div class="checkbox-container">
@@ -139,6 +175,11 @@ export interface MinutaFormData {
       width: 80%;
       max-width: 400px;
       margin: 0 auto;
+      
+      &.error {
+        background-color: var(--mat-sys-error-container);
+        border: 1px solid var(--mat-sys-error);
+      }
     }
     
     .checkbox-container {
@@ -165,6 +206,14 @@ export interface MinutaFormData {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    
+    .validation-error {
+      color: var(--mat-sys-error);
+      font-size: 0.875rem;
+      width: 80%;
+      max-width: 400px;
+      margin: -0.5rem auto 0;
+    }
   `]
 })
 export class MinutaInputFormComponent {
@@ -172,10 +221,18 @@ export class MinutaInputFormComponent {
   @Input() resetTrigger = 0;
   
   minutaForm: FormGroup;
+  readonly MAX_FILE_SIZE_MB = 300;
   
   constructor(private fb: FormBuilder) {
     this.minutaForm = this.fb.group({
-      pdfFile: [null, Validators.required],
+      pdfFile: [
+        null, 
+        [
+          Validators.required, 
+          fileTypeValidator, 
+          fileSizeValidator(this.MAX_FILE_SIZE_MB)
+        ]
+      ],
       transmitenteSupraqualificada: [false],
       adquirenteSupraqualificada: [false]
     });
@@ -194,20 +251,41 @@ export class MinutaInputFormComponent {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
+      // Only take the first file if multiple are somehow selected
+      const file = input.files[0];
+      
       this.minutaForm.patchValue({
-        pdfFile: input.files[0]
+        pdfFile: file
       });
-      this.minutaForm.get('pdfFile')?.markAsDirty();
-      this.minutaForm.get('pdfFile')?.updateValueAndValidity();
+      
+      const fileControl = this.minutaForm.get('pdfFile');
+      fileControl?.markAsDirty();
+      fileControl?.updateValueAndValidity();
     }
+  }
+  
+  hasFileError(): boolean {
+    const fileControl = this.minutaForm.get('pdfFile');
+    return fileControl ? (fileControl.invalid && fileControl.touched) : false;
+  }
+  
+  hasFileTypeError(): boolean {
+    const fileControl = this.minutaForm.get('pdfFile');
+    return fileControl ? fileControl.hasError('invalidFileType') : false;
+  }
+  
+  hasFileSizeError(): boolean {
+    const fileControl = this.minutaForm.get('pdfFile');
+    return fileControl ? fileControl.hasError('fileTooLarge') : false;
   }
   
   removeFile() {
     this.minutaForm.patchValue({
       pdfFile: null
     });
-    this.minutaForm.get('pdfFile')?.markAsDirty();
-    this.minutaForm.get('pdfFile')?.updateValueAndValidity();
+    const fileControl = this.minutaForm.get('pdfFile');
+    fileControl?.markAsDirty();
+    fileControl?.updateValueAndValidity();
   }
   
   resetForm() {
