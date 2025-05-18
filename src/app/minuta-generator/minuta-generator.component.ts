@@ -314,9 +314,9 @@ export class MinutaGeneratorComponent {
       
       this.apiService.generateMinuta(file, isTransmitente, isAdquirente)
         .subscribe({
-          next: (htmlContent) => {
-            this.rawHtmlContent = htmlContent;
-            this.minutaResult = this.sanitizer.bypassSecurityTrustHtml(htmlContent);
+          next: (resp) => {
+            this.rawHtmlContent = resp.data?.minuta_html ?? "";
+            this.minutaResult = this.sanitizer.bypassSecurityTrustHtml(this.rawHtmlContent);
             this.isLoading = false;
           },
           error: (error) => {

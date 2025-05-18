@@ -4,6 +4,21 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 
+export interface ErrorInfo {
+  message: string;
+  code: string;
+}
+
+export interface Response<T> {
+  data?: T;
+  errors?: ErrorInfo[];
+}
+
+export interface GenerateMinutaResp {
+  tokens_not_found: string[];
+  minuta_html: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -16,16 +31,12 @@ export class ApiService {
     file: File, 
     isTransmitenteOverqualified: boolean = false, 
     isAdquirenteOverqualified: boolean = false
-  ): Observable<string> {
+  ): Observable<Response<GenerateMinutaResp>> {
     const formData = new FormData();
     formData.append('ato_consultar_pdf', file);
     formData.append('is_transmitente_overqualified', isTransmitenteOverqualified ? 'true' : 'false');
     formData.append('is_adquirente_overqualified', isAdquirenteOverqualified ? 'true' : 'false');
     
-    return this.http.post<string>(
-      `${this.baseUrl}/api/v1/generator/minuta`, 
-      formData, 
-      { responseType: 'text' as 'json' }
-    );
+    return this.http.post<Response<GenerateMinutaResp>>(`${this.baseUrl}/api/v1/generator/minuta`, formData);
   }
 }
