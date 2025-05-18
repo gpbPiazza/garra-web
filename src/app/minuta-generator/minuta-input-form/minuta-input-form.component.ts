@@ -169,7 +169,7 @@ function fileSizeValidator(maxSizeInMB: number) {
     .selected-file-info {
       display: flex;
       align-items: center;
-      background-color: rgba(0, 0, 0, 0.04);
+      background-color: var(--mat-sys-surface-dim);
       padding: 12px 16px;
       border-radius: 8px;
       width: 80%;

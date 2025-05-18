@@ -4,8 +4,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../services/api.service';
+import { MinutaCheckComponent } from './minuta-check/minuta-check.component';
 import { MinutaFormData, MinutaInputFormComponent } from './minuta-input-form/minuta-input-form.component';
-import { MinutaResultComponent } from './minuta-result/minuta-result.component';
+
+enum MinutaGeneratorState {
+  INPUT = 'input',
+  CHECK = 'check',
+}
 
 @Component({
   selector: 'app-minuta-generator',
@@ -15,23 +20,24 @@ import { MinutaResultComponent } from './minuta-result/minuta-result.component';
     MatProgressBarModule,
     MatSnackBarModule,
     MinutaInputFormComponent,
-    MinutaResultComponent
+    MinutaCheckComponent,
   ],
   template: `
     <mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
     <div class="minuta-container">
       <app-minuta-input-form 
-        *ngIf="!minutaResult"
+        *ngIf="currentState === 'input'"
         [resetTrigger]="resetTrigger"
         (generateMinuta)="onGenerateMinuta($event)">
       </app-minuta-input-form>
       
-      <app-minuta-result 
-        *ngIf="minutaResult"
+      <app-minuta-check
+        *ngIf="currentState === 'check'"
         [content]="minutaResult"
         [rawContent]="rawHtmlContent"
+        [tokensNotFound]="tokensNotFound"
         (newMinuta)="clearMinutaResultAndFile()">
-      </app-minuta-result>
+      </app-minuta-check>
     </div>
   `,
   styles: [` 
@@ -49,14 +55,20 @@ import { MinutaResultComponent } from './minuta-result/minuta-result.component';
       display: flex;
       flex-direction: column;
       align-items: center;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
     }
   `]
 })
 export class MinutaGeneratorComponent {
   minutaResult: SafeHtml | null = null;
   rawHtmlContent = '';
+  tokensNotFound: string[] = [];
   isLoading = false;
   resetTrigger = 0;
+  currentState: MinutaGeneratorState = MinutaGeneratorState.INPUT;
   
   constructor(
     private apiService: ApiService,
@@ -76,8 +88,10 @@ export class MinutaGeneratorComponent {
     .subscribe({
       next: (resp) => {
         this.rawHtmlContent = resp.data?.minuta_html ?? "";
+        this.tokensNotFound = resp.data?.tokens_not_found ?? [];
         this.minutaResult = this.sanitizer.bypassSecurityTrustHtml(this.rawHtmlContent);
         this.isLoading = false;
+        this.currentState = MinutaGeneratorState.CHECK;
       },
       error: (error) => {
         console.error('Error generating minuta:', error);
@@ -90,9 +104,17 @@ export class MinutaGeneratorComponent {
     });
   }
   
+  
+  finalizeMinuta(editedContent: string) {
+    this.rawHtmlContent = editedContent;
+    this.minutaResult = this.sanitizer.bypassSecurityTrustHtml(editedContent);
+  }
+  
   clearMinutaResultAndFile() {
     this.minutaResult = null;
     this.rawHtmlContent = '';
+    this.tokensNotFound = [];
     this.resetTrigger++;
+    this.currentState = MinutaGeneratorState.INPUT;
   }
 }

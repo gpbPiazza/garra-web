@@ -24,7 +24,6 @@ import { MinutaGeneratorComponent } from './minuta-generator/minuta-generator.co
     }
     
     .content {
-      padding-top: 60px; 
       background-color: var(--mat-sys-background);
       color: var(--mat-sys-on-background);
       height: 100vh;
