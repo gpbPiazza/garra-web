@@ -5,39 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface MinutaFormData {
   file: File;
   isTransmitenteSupraqualificada: boolean;
   isAdquirenteSupraqualificada: boolean;
-}
-
-function fileTypeValidator(control: AbstractControl): ValidationErrors | null {
-  const file = control.value as File;
-  if (!file) return null;
-  
-  if (file.type !== 'application/pdf') {
-    return { invalidFileType: true };
-  }
-  
-  return null;
-}
-
-function fileSizeValidator(maxSizeInMB: number) {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const file = control.value as File;
-    if (!file) return null;
-    
-    // Convert MB to bytes (1MB = 1,048,576 bytes)
-    const maxSizeInBytes = maxSizeInMB * 1048576;
-    
-    if (file.size > maxSizeInBytes) {
-      return { fileTooLarge: { actualSize: file.size, maxSize: maxSizeInBytes } };
-    }
-    
-    return null;
-  };
 }
 
 @Component({
@@ -53,7 +27,8 @@ function fileSizeValidator(maxSizeInMB: number) {
     MatIconModule,
     MatCheckboxModule,
     MatTooltipModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatInputModule
   ],
   template: `
     <mat-card class="generate-minuta-card">
@@ -90,7 +65,6 @@ function fileSizeValidator(maxSizeInMB: number) {
                   <mat-icon>close</mat-icon>
                 </button>
               </div>
-
               <div *ngIf="minutaForm.invalid" class="validation-error">
                 <div *ngIf="hasFileTypeError()">
                   O arquivo deve ser um PDF.
@@ -125,11 +99,6 @@ function fileSizeValidator(maxSizeInMB: number) {
     </mat-card>
   `,
   styles: [`
-    @use '../shared-styles' as shared;
-
-    @include shared.card;
-    @include shared.themed-icons;
-
     .generate-minuta-card {
       display: flex;
       flex-direction: column;
@@ -251,7 +220,6 @@ export class MinutaInputFormComponent implements OnChanges {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      // Only take the first file if multiple are somehow selected
       const file = input.files[0];
       
       this.minutaForm.patchValue({
@@ -308,4 +276,31 @@ export class MinutaInputFormComponent implements OnChanges {
       });
     }
   }
+}
+
+function fileTypeValidator(control: AbstractControl): ValidationErrors | null {
+  const file = control.value as File;
+  if (!file) return null;
+  
+  if (file.type !== 'application/pdf') {
+    return { invalidFileType: true };
+  }
+  
+  return null;
+}
+
+function fileSizeValidator(maxSizeInMB: number) {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const file = control.value as File;
+    if (!file) return null;
+    
+    // Convert MB to bytes (1MB = 1,048,576 bytes)
+    const maxSizeInBytes = maxSizeInMB * 1048576;
+    
+    if (file.size > maxSizeInBytes) {
+      return { fileTooLarge: { actualSize: file.size, maxSize: maxSizeInBytes } };
+    }
+    
+    return null;
+  };
 }

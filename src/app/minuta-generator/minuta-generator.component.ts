@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../services/api.service';
 import { MinutaCheckComponent } from './minuta-check/minuta-check.component';
 import { MinutaFormData, MinutaInputFormComponent } from './minuta-input-form/minuta-input-form.component';
@@ -63,7 +62,7 @@ enum MinutaGeneratorState {
   `]
 })
 export class MinutaGeneratorComponent {
-  minutaResult: SafeHtml | null = null;
+  minutaResult = '';
   rawHtmlContent = '';
   tokensNotFound: string[] = [];
   isLoading = false;
@@ -72,13 +71,12 @@ export class MinutaGeneratorComponent {
   
   constructor(
     private apiService: ApiService,
-    private sanitizer: DomSanitizer,
     private snackBar: MatSnackBar
   ) {}
   
   onGenerateMinuta(formData: MinutaFormData) {
     this.isLoading = true;
-    this.minutaResult = null;
+    this.minutaResult = '';
     
     this.apiService.generateMinuta(
       formData.file, 
@@ -89,7 +87,7 @@ export class MinutaGeneratorComponent {
       next: (resp) => {
         this.rawHtmlContent = resp.data?.minuta_html ?? "";
         this.tokensNotFound = resp.data?.tokens_not_found ?? [];
-        this.minutaResult = this.sanitizer.bypassSecurityTrustHtml(this.rawHtmlContent);
+        this.minutaResult =  this.rawHtmlContent;
         this.isLoading = false;
         this.currentState = MinutaGeneratorState.CHECK;
       },
@@ -103,15 +101,9 @@ export class MinutaGeneratorComponent {
       }
     });
   }
-  
-  
-  finalizeMinuta(editedContent: string) {
-    this.rawHtmlContent = editedContent;
-    this.minutaResult = this.sanitizer.bypassSecurityTrustHtml(editedContent);
-  }
-  
+    
   clearMinutaResultAndFile() {
-    this.minutaResult = null;
+    this.minutaResult = '';
     this.rawHtmlContent = '';
     this.tokensNotFound = [];
     this.resetTrigger++;

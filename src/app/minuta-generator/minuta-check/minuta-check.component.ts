@@ -1,13 +1,11 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-minuta-check',
@@ -22,7 +20,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     MatChipsModule,
     MatIconModule,
     MatSnackBarModule,
-    MatTooltipModule
   ],
   template: `
     <mat-card>
@@ -32,39 +29,42 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       </mat-card-header>
       
       <mat-card-content>
-        <div *ngIf="tokensNotFound?.length" class="tokens-warning">
-          <h3>Atenção: Alguns dados não foram encontrados</h3>
-          <p>Por favor, verifique e complete os seguintes campos na minuta:</p>
-          <mat-chip-set>
-            <mat-chip 
-              *ngFor="let token of tokensNotFound" 
-              highlighted>
-              {{ token }}
-            </mat-chip>
-          </mat-chip-set>
-        </div>
-        
+          <div *ngIf="tokensNotFound?.length" class="tokens-warning">
+            <h3>Atenção: Alguns dados não foram encontrados</h3>
+            <p>Por favor, verifique e complete os seguintes campos na minuta:</p>
+            <mat-chip-set>
+              <mat-chip 
+                *ngFor="let token of tokensNotFound" 
+                highlighted>
+                {{ token }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+
         <div class="minuta-editor-container">
           <div #minutaEditor 
               class="minuta-editor" 
               [class.highlight-missing]="tokensNotFound.length" 
-              contenteditable="true"
+              [attr.contenteditable]=this.editMode
               (input)="onEditorInput()">
           </div>
         </div>
       </mat-card-content>
       
       <mat-card-actions align="end">
-
-        <button mat-button (click)="onDownload()">
+        <button mat-button mat-raised-button (click)="onEditMode()">
+          <mat-icon>{{ editMode ? 'check' : 'edit' }}</mat-icon>
+          {{ editMode ? 'FINALIZAR EDIÇÃO' : 'EDITAR' }}
+      </button>
+        <button mat-button mat-raised-button [disabled]=editMode (click)="onDownload()">
           <mat-icon>download</mat-icon>
           EXPORTAR
         </button>
-        <button mat-button mat-raised-button  (click)="onCopy()">
+        <button mat-button mat-raised-button  [disabled]=editMode (click)="onCopy()">
           <mat-icon>content_copy</mat-icon>
           COPIAR
         </button>
-        <button mat-raised-button (click)="this.newMinuta.emit()">
+        <button mat-raised-button [disabled]=editMode (click)="onNewMinuta()">
           <mat-icon>add_circle</mat-icon>
           GERAR NOVA MINUTA!
         </button>
@@ -72,11 +72,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     </mat-card>
   `,
   styles: [`
-    @use '../shared-styles' as shared;
-
-    @include shared.card;
-    @include shared.themed-icons;
-
     .tokens-warning {
       margin-bottom: 1rem;
       padding: 1rem;
@@ -84,96 +79,85 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       border-left: 4px solid var(--mat-sys-error);
       border-radius: 4px;
     }
-    
-    .tokens-warning h3 {
+
+    .tokens-warning, h3 {
       margin-top: 0;
       color: var(--mat-sys-on-error-container);
     }
     
+
     .minuta-editor-container {
-      margin: 1rem 0;
-      border: 1px solid var(--mat-sys-outline);
       border-radius: 4px;
       padding: 1rem;
-      max-height: 500px;
-      overflow-y: auto;
+      box-shadow: var(--mat-sys-level2);
+      background-color: var(--mat-sys-surface);
     }
     
     .minuta-editor {
       min-height: 300px;
-      padding: 0.5rem;
+      max-height: 600px;
+      overflow-y: auto;
       outline: none;
-      font-family: 'Roboto', sans-serif;
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1.5;
-    }
-    
-    .highlight-missing {
-      background-color: var(--mat-sys-surface-container-highest);
-    }
-    
-    .token-missing {
-      background-color: var(--mat-sys-error-container);
-      padding: 0 2px;
-      border-radius: 2px;
     }
   `]
 })
-export class MinutaCheckComponent implements OnInit, AfterViewInit {
-  @Input() content: SafeHtml | null = null;
+export class MinutaCheckComponent implements AfterViewInit {
+  @Input() content = '';
   @Input() rawContent = '';
   @Input() tokensNotFound: string[] = [];
-  
+
   @Output() newMinuta = new EventEmitter<void>();
-  
-  
+
   @ViewChild('minutaEditor') minutaEditor!: ElementRef<HTMLDivElement>;
   
   editedContent = '';
-  
+  editMode = false;
+
   constructor(
     private clipboard: Clipboard,
     private snackBar: MatSnackBar,
-    private sanitizer: DomSanitizer
-  ) {}
-  
-  ngOnInit(): void {
-    this.editedContent = this.rawContent;
-  }
-  
+  ) { }
+
   ngAfterViewInit(): void {
-    if (this.minutaEditor && this.content) {
-      this.minutaEditor.nativeElement.innerHTML = this.rawContent;
+    if (!this.minutaEditor) return;
+    if (!this.content) return ;
     
-      if (this.tokensNotFound?.length) {
-        this.highlightMissingTokens();
-      }
-    }
+    this.minutaEditor.nativeElement.innerHTML = this.content; 
+
+    if (!this.tokensNotFound?.length) return;
+
+    this.highlightMissingTokens();
   }
-  
+
   highlightMissingTokens(): void {
-    const editorContent = this.minutaEditor.nativeElement.innerHTML;
-    let highlightedContent = editorContent;
-    
+    let highlightedContent = this.minutaEditor.nativeElement.innerHTML;
+
     this.tokensNotFound.forEach(token => {
       const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const tokenRegex = new RegExp(`\\[\\[${escapedToken} NÃO ENCONTRADO\\]\\]`, 'g');
-      
+
       highlightedContent = highlightedContent.replace(
-        tokenRegex, 
-        `<span class="token-missing">[[${token} NÃO ENCONTRADO]]</span>`
+        tokenRegex,
+        `<span style="color: var(--mat-sys-on-error-container);">[[${token} NÃO ENCONTRADO]]</span>`
       );
     });
-    
+
+    this.content = highlightedContent;
     this.minutaEditor.nativeElement.innerHTML = highlightedContent;
   }
-  
+
   onEditorInput(): void {
     this.editedContent = this.minutaEditor.nativeElement.innerHTML;
   }
-  
+
+  onEditMode(): void {
+    this.editMode = this.editMode ? false : true;
+  }
+
   onCopy() {
-    const content = this.editedContent || this.rawContent;
+    const content = this.editedContent || this.minutaEditor.nativeElement.innerHTML;
     this.clipboard.copy(content);
     this.snackBar.open('Conteúdo copiado!', 'Fechar', {
       duration: 2000,
@@ -181,12 +165,19 @@ export class MinutaCheckComponent implements OnInit, AfterViewInit {
       verticalPosition: 'bottom'
     });
   }
-  
+
+  onNewMinuta() {
+    this.editedContent = '';
+    this.content = '';
+    this.editedContent = '';
+    this.newMinuta.emit()
+  }
+
   onDownload(): void {
-    const content = this.editedContent || this.rawContent;
+    const content = this.editedContent || this.minutaEditor.nativeElement.innerHTML;
 
     const blob = new Blob([content], { type: 'text/html' });
-    
+
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -195,7 +186,7 @@ export class MinutaCheckComponent implements OnInit, AfterViewInit {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    
+
     this.snackBar.open('Minuta exportada com sucesso!', 'Fechar', {
       duration: 2000
     });
