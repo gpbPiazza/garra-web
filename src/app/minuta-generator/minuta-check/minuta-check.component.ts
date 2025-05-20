@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-minuta-check',
@@ -20,6 +21,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatChipsModule,
     MatIconModule,
     MatSnackBarModule,
+    MatTooltipModule,
   ],
   template: `
     <mat-card>
@@ -31,11 +33,11 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
       <mat-card-content>
           <div *ngIf="tokensNotFound?.length" class="tokens-warning">
             <h3>Atenção: Alguns dados não foram encontrados</h3>
-            <p>Por favor, verifique e complete os seguintes campos na minuta:</p>
-            <p>Edite os valores não encontrados clicando aqui abaixo.</p>
+            <p>Clique em editar e selecione os valores não encontrados clicando neles aqui abaixo.</p>
             <mat-card-actions>
               <button 
                 mat-raised-button
+                [matTooltip]="'Editar o ' + token"
                 [disabled]="!editMode"
                 *ngFor="let token of tokensNotFound" 
                 highlighted
@@ -58,12 +60,18 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
         <button 
           mat-button 
           mat-raised-button 
+          [matTooltip]="editMode ? 'Finalizar edição e salvar alterações' : 'Ativar modo de edição'"
           [class.attention-needed]="tokensNotFound.length > 0 &&  !editMode"
           (click)="onEditMode()">
           <mat-icon>{{ editMode ? 'check' : 'edit' }}</mat-icon>
           {{ editMode ? 'FINALIZAR EDIÇÃO' : 'EDITAR' }}
         </button>
-        <button mat-button mat-raised-button [disabled]=editMode (click)="onDownload()">
+        <button 
+          matTooltip="Faça donwload do resultado"
+          mat-button 
+          mat-raised-button 
+          [disabled]=editMode 
+          (click)="onDownload()">
           <mat-icon>download</mat-icon>
           EXPORTAR
         </button>
@@ -71,7 +79,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
           <mat-icon>content_copy</mat-icon>
           COPIAR
         </button>
-        <button mat-raised-button [disabled]=editMode (click)="onNewMinuta()">
+        <button 
+          mat-raised-button 
+          [disabled]=editMode 
+          (click)="onNewMinuta()">
           <mat-icon>add_circle</mat-icon>
           GERAR NOVA MINUTA!
         </button>
@@ -120,12 +131,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     @keyframes pulse {
       0% {
         transform: scale(1.2);
+        box-shadow: 0 0 0 0 rgba(0, 0, 255, 0.3);
       }
       70% {
         transform: scale(1.3);
+        box-shadow: 0 0 0 10px rgba(0, 0, 255, 0);
       }
       100% {
         transform: scale(1.2);
+        box-shadow: 0 0 0 0 rgba(0, 0, 255, 0);
       }
     }
 
@@ -186,6 +200,8 @@ export class MinutaCheckComponent implements AfterViewInit {
       this.onEditMode()
     }
 
+    if (!this.tokensNotFound.find(t => t === token)) return;
+
     const tokenElement = document.getElementById(`${token}`)
     if (!tokenElement) return;
 
@@ -204,8 +220,6 @@ export class MinutaCheckComponent implements AfterViewInit {
     };
   
     document.addEventListener('keydown', handleKeyPress);
-
-    this.snackBar.open(`Editando: ${token}`, 'OK', {duration: 3000});
   }
 
   onEditorInput(): void {
