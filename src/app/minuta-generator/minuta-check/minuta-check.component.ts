@@ -199,7 +199,6 @@ export class MinutaCheckComponent implements AfterViewInit {
     if (!this.editMode) {
       this.onEditMode()
     }
-
     if (!this.tokensNotFound.find(t => t === token)) return;
 
     const tokenElement = document.getElementById(`${token}`)
@@ -213,17 +212,16 @@ export class MinutaCheckComponent implements AfterViewInit {
 
     selection.removeAllRanges();
     selection.addRange(range);
-
-    const handleKeyPress = (event: KeyboardEvent) => {
-      this.tokensNotFound = this.tokensNotFound.filter(t => t !== token)
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  
-    document.addEventListener('keydown', handleKeyPress);
   }
 
   onEditorInput(): void {
     this.editedContent = this.minutaEditor.nativeElement.innerHTML;
+
+    this.tokensNotFound.forEach((t, index) => {
+      if (!this.editedContent.includes(t)) {
+        this.tokensNotFound.splice(index, 1)
+      }
+    })
   }
 
   onEditMode(): void {
