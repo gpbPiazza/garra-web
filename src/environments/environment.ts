@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://garra-api-00f947aa0a8c.herokuapp.com'
+  apiUrl: 'https://garra-api-f36970b61aa3.herokuapp.com'
 };
